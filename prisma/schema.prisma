@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                         String     @id @default(uuid())
+  fullName                   String
+  email                      String     @unique
+  contact                    String
+  password                   String
+  country                    String
+  address                    String?
+  lastLogin                  DateTime   @default(now())
+  isVerified                 Boolean    @default(false)
+  resetPasswordToken         String? 
+  forgotPasswordExpiresAt    DateTime?
+  verificationToken          String? 
+  verificationTokenExpiresAt DateTime?
+  restaurant                 Restaurant[]
+  profilePicture             String?
+  role                       Role       @default(USER)
+  orders                     Order[] 
+  cart                       Cart[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Restaurant {
+  id             String  @id @default(uuid())
+  restaurantName String
+  city           String
+  country        String
+  deliveryTime   Int 
+  cuisines       Json?
+  menus          Menu[]
+  imageURL       String
+  price          Int
+  orders         Order[] 
+  userId         String
+  user           User    @relation(fields: [userId], references: [id],onDelete: Cascade)
+
+}
+
+model Menu {
+  id           String     @id @default(uuid())
+  name         String
+  description  String
+  price        Float
+  image        String
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id],onDelete: Cascade)
+  createdAt DateTime @default(now()) 
+  updatedAt DateTime @updatedAt  
+  cart         Cart[] 
+}
+
+model Order {
+  id                 String     @id @default(uuid())
+  userId             String
+  user               User       @relation(fields: [userId], references: [id],onDelete: Cascade)
+  restaurantId       String
+  restaurant         Restaurant @relation(fields: [restaurantId], references: [id],onDelete: Cascade)
+  
+  deliveryDetailsId  String
+  deliveryDetails    DeliveryDetails @relation(fields: [deliveryDetailsId], references: [id],onDelete:Cascade)
+  
+  status             Status     @default(PENDING)
+}
+
+enum Status {
+  CONFIRM
+  PENDING
+  DELIVERED
+  CANCEL
+}
+
+model DeliveryDetails {
+  id      String  @id @default(uuid())
+  email   String  @unique
+  name    String
+  address String
+  city    String
+  order Order[]
+}
+
+model Cart {
+  id       String @id @default(uuid())
+  user     User   @relation(fields: [userId], references: [id],onDelete: Cascade)
+  menuId String
+  menu Menu @relation(fields: [menuId], references: [id],onDelete: Cascade)
+  userId   String
+  items    Json
+  quantity Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
