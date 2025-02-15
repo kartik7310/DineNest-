@@ -6,12 +6,11 @@ import menuRoute from "./routes/menuRoute.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import errorHandler from "./middlewares/errorMiddleware.js";
-
-const port = process.env.PORT || 8001;
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+  const port = process.env.PORT || 8001;
+  const app = express();
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 const corsOption = {
   origin: "http://example.com", //fronted url
   optionsSuccessStatus: 200,
@@ -19,7 +18,7 @@ const corsOption = {
 app.use(cors(corsOption)); 
 app.use("/api/v1/", authRoute);
 app.use("/api/v1/restaurant", restaurantRoute);
-app.use("/api/v1/menu", menuRoute);
+app.use("/api/v1/menu", menuRoute); 
 app.get("/home", (req, res) => {
   res.send("Home page !");
 });
