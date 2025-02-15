@@ -18,15 +18,15 @@ router.post("/", authMiddleware,adminMiddleware, upload.single("image"), CreateR
 
 router.get("/", getRestaurant); //done
 
-router.get("/order", authMiddleware, getRestaurantOrder);
+router.get("/order", authMiddleware, getRestaurantOrder);//done
 
 router.put("/:restaurantId", authMiddleware, adminMiddleware,upload.single("image"), updateRestaurant);//done
 
 router.get("/order/:orderId/status", authMiddleware, updateOrderStatus);
 
-router.get("/search/:searchText", searchFeature);
+router.get("/search", searchFeature);
 
-router.get("/:restaurantId", getSingleRestaurant);//done
+router.get("/:restaurantId", getSingleRestaurant);
 
 router.delete("/:restaurantId", authMiddleware,adminMiddleware, deleteRestaurant);
 

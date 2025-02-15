@@ -7,8 +7,7 @@ import { deleteImage } from "../utils/deleteImage.js";
 export const CreateRestaurant = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    
-    
+
     if (!userId) {
       // this id extract from middleware
       throw new customError("User id not provide");
@@ -49,13 +48,11 @@ export const CreateRestaurant = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
-   
   }
 };
 
 export const getRestaurant = async (req, res, next) => {
   try {
- 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
@@ -68,14 +65,14 @@ export const getRestaurant = async (req, res, next) => {
     const restaurants = await prisma.restaurant.findMany({
       skip: offset,
       take: limit,
-      include:{
-        user:{
-          select:{
-            fullName:true,
-            email:true
-          }
-        }
-      } 
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+      },
     });
 
     const totalRestaurants = await prisma.restaurant.count();
@@ -116,14 +113,16 @@ export const updateRestaurant = async (req, res, next) => {
   try {
     const { deliveryTime, cuisines, price } = req.body; // Extract fields from req.body
     const { restaurantId } = req.params; // Extract restaurantId from req.params
-    const {id} = req.user; // Get user ID from the authentication middleware
+    const { id } = req.user; // Get user ID from the authentication middleware
     console.log(id);
-    
+
     const file = req.file; // Get the uploaded file (if any)
 
     // Validate required fields
     if (!deliveryTime || !cuisines || !price) {
-      throw new customError("All fields (deliveryTime, cuisines, price) are required.");
+      throw new customError(
+        "All fields (deliveryTime, cuisines, price) are required."
+      );
     }
 
     // Validate user ID
@@ -137,10 +136,12 @@ export const updateRestaurant = async (req, res, next) => {
     });
 
     if (!restaurant) {
-      return res.status(404).json({ success: false, message: "Restaurant not found!" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Restaurant not found!" });
     }
-  console.log(restaurant.userId);
-  
+    console.log(restaurant.userId);
+
     if (restaurant.userId !== id) {
       return res.status(403).json({
         success: false,
@@ -181,18 +182,20 @@ export const updateRestaurant = async (req, res, next) => {
   }
 };
 
-export const getRestaurantOrder = async (req, res,next) => {
+export const getRestaurantOrder = async (req, res, next) => {
   try {
-    const {id} = req.user;
-    if (!userId) {
+    const { id } = req.user;
+    console.log(id);
 
+    if (!id) {
       throw new customError("User id not provide");
     }
-    const restaurant = await prisma.restaurant.findUnique({
+    const restaurant = await prisma.restaurant.findFirst({
       where: {
-        userId: userId,
+        userId: id,
       },
     });
+
     if (!restaurant) throw new customError(" Restaurant not found !");
 
     const order = await prisma.order.findMany({
@@ -207,6 +210,8 @@ export const getRestaurantOrder = async (req, res,next) => {
         },
       },
     });
+    console.log(order);
+
     if (order.length === 0) throw new customError("Order not exist!");
     return res.status(200).json({
       success: true,
@@ -214,21 +219,16 @@ export const getRestaurantOrder = async (req, res,next) => {
       data: order,
     });
   } catch (error) {
-   next(error); 
+    next(error);
   }
 };
-export const updateOrderStatus = async (req, res,next) => {
+export const updateOrderStatus = async (req, res, next) => {
   try {
-    const userId = req.user;
-    if (!userId) {
-      //this id extract from middleware
-      throw new customError("User id not  provide !");
-    }
     const { orderId } = req.params;
     if (!orderId) throw new customError("order not found");
     const { status } = req.body;
     if (!status) {
-     throw new customError("status are required");
+      throw new customError("status are required");
     }
     const order = await prisma.order.findUnique({
       where: {
@@ -244,68 +244,68 @@ export const updateOrderStatus = async (req, res,next) => {
         status: status,
       },
     });
-   throw new customError("status updated successfully");
+    throw new customError("status updated successfully");
   } catch (error) {
-    next(error);  
+    next(error);
   }
-};
-
-// searching api
-export const searchFeature = async (req, res,next) => {
+};export const searchFeature = async (req, res, next) => {
   try {
-    const {
-      searchName = "",
-      searchQuery = "",
-      searchCuisines = "",
-      skip = 0,
-      take = 10,
-      orderBy = "name",
-    } = req.query;
+    const restaurantName = req.query.restaurantName || "";
+    const searchCity = req.query.searchCity || "";
+    const selectedCuisines = (req.query.searchCuisines || "")
+      .split(",")
+      .filter((cuisine) => cuisine);
+
+    // Validate at least one search parameter
+    if (!restaurantName && !searchCity && selectedCuisines.length === 0) {
+      throw new customError("Please provide at least one search parameter!", 400);
+    }
 
     // Build dynamic Prisma query
-
     const whereCondition = {
       AND: [
-        {
-          OR: [
-            searchName && {
-              name: {
-                contains: searchName,
-                mode: "insensitive",
-              },
-            },
-            searchQuery && {
-              body: {
-                contains: searchQuery,
-                mode: "insensitive",
-              },
-            },
-          ].filter(Boolean), // Remove undefined values
-        },
-        searchCuisines && {
-          cuisine: {
-            equals: searchCuisines,
-            mode: "insensitive",
+        restaurantName && {
+          restaurantName: {
+            contains: restaurantName, // Removed `mode: "insensitive"`
           },
         },
-      ].filter(Boolean), // Remove undefined values
+        searchCity && {
+          city: {
+            contains: searchCity, // Removed `mode: "insensitive"`
+          },
+        },
+        selectedCuisines.length > 0 && {
+          cuisines: {
+            hasEvery: selectedCuisines,
+          },
+        },
+      ].filter(Boolean),
     };
 
-    // Fetch restaurants
+    console.log("Where Condition:", JSON.stringify(whereCondition, null, 2));
+
+    // Fetch restaurants with pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const restaurants = await prisma.restaurant.findMany({
       where: whereCondition,
-      skip: parseInt(skip), 
-      take: parseInt(take),
-      orderBy: { [orderBy]: "asc" }, 
+      orderBy: { restaurantName: "asc" },
+      skip: skip,
+      take: limit,
     });
 
+    console.log("Fetched Restaurants:", restaurants);
+
     // Check if no results found
-    if (!restaurants.length) {
-      throw new customError("No restaurants found!");
+    if (restaurants.length === 0) {
+      throw new customError("No restaurants found!", 404);
     }
 
     res.status(200).json({
       success: true,
+      message: "Restaurants retrieved successfully",
       data: restaurants,
     });
   } catch (error) {
@@ -315,9 +315,8 @@ export const searchFeature = async (req, res,next) => {
 export const getSingleRestaurant = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
-    console.log(restaurantId);
-    
-    if (!restaurantId) return res.status(400).json({ error: "Restaurant id not provided" });
+    if (!restaurantId)
+      return res.status(400).json({ error: "Restaurant id not provided" });
 
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
@@ -330,7 +329,7 @@ export const getSingleRestaurant = async (req, res, next) => {
         },
       },
     });
-    
+
     if (!restaurant) {
       return next(new customError("Restaurant not found!", 404));
     }
@@ -345,14 +344,13 @@ export const getSingleRestaurant = async (req, res, next) => {
   }
 };
 
-
 export const deleteRestaurant = async (req, res, next) => {
   try {
     const { restaurantId } = req.params;
     console.log(restaurantId);
 
-    const userId = req.user;
-    console.log(userId);
+    const {id} = req.user;
+ 
 
     if (!restaurantId) throw new customError("Restaurant id not provide");
     const restaurant = await prisma.restaurant.findUnique({
@@ -363,10 +361,10 @@ export const deleteRestaurant = async (req, res, next) => {
     if (!restaurant) {
       throw new customError("Restaurant not found !");
     }
-    if (userId !== restaurant.userId) {
+    if (id !== restaurant.userId) {
       throw new customError("You are not authorize to delete this restaurant");
     }
-  await deleteImage(restaurant.imageURL);
+    await deleteImage(restaurant.imageURL);
     await prisma.restaurant.delete({
       where: {
         id: restaurantId,
