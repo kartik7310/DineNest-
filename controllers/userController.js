@@ -2,12 +2,12 @@ import prisma from "../database/db.js";
 import {customError} from "../utils/customError.js";
 export const getProfile = async (req, res ,next) => {
   try {
-    const userId = req.user;
-    if (!userId) {
+    const {id} = req.user;
+    if (!id) {
      return next(new customError("user id not found"))
     }
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: {id},
     });
     if (!user) {
       return next(new customError("user not found"))

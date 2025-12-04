@@ -16,6 +16,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     req.user = { id: decoded.id, role: decoded.role };
+
    
      // Add the entire decoded payload for later use
     next();

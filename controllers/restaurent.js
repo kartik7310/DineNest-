@@ -185,7 +185,6 @@ export const updateRestaurant = async (req, res, next) => {
 export const getRestaurantOrder = async (req, res, next) => {
   try {
     const { id } = req.user;
-    console.log(id);
 
     if (!id) {
       throw new customError("User id not provide");
